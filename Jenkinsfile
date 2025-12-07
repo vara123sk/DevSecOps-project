@@ -12,7 +12,8 @@ pipeline {
 
         stage('Build & JUnit Test') {
             steps {
-                sh 'mvn install'
+                sh 'chmod +x mvnw'
+                sh './mvnw install'
             }
             post {
                 success {
