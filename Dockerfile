@@ -1,19 +1,23 @@
-FROM adoptopenjdk/openjdk11:alpine-slim as build
+### BUILD STAGE ###
+FROM eclipse-temurin:11-jdk-jammy AS build
+
 WORKDIR /app
+COPY . .
 
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
-COPY src src
+# Build your app
+RUN ./mvnw -DskipTests clean package
 
-RUN ./mvnw package
-COPY target/*.jar app.jar
+### RUNTIME STAGE ###
+FROM eclipse-temurin:11-jre-jammy
 
-FROM adoptopenjdk/openjdk11:alpine-slim
-VOLUME /tmp
-RUN addgroup --system javauser && adduser -S -s /bin/false -G javauser javauser
+# Create secure user
+RUN groupadd --system javauser && \
+    useradd --system --shell /usr/sbin/nologin --gid javauser javauser
+
 WORKDIR /app
-COPY --from=build /app/app.jar .
-RUN chown -R javauser:javauser /app
+COPY --from=build /app/target/*.jar app.jar
+
 USER javauser
-ENTRYPOINT ["java","-jar","app.jar"]
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
